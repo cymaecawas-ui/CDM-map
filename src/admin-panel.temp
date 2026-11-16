@@ -1,16 +1,1 @@
-function adminPanel() {
-  return `<div class="modal-scrim" id="scrim"><section class="admin-modal">
-    <button class="close" id="closeAdmin">×</button><div class="eyebrow">CAMPUS MANAGEMENT</div>
-    <h2>${state.admin ? 'Admin dashboard' : 'Administrator sign in'}</h2>
-    ${!state.admin ? `<p>Use the administrator email and password created in Supabase Auth.</p>
-      <form id="login"><label>Email<input name="email" type="email" autocomplete="username" required></label>
-      <label>Password<input name="password" type="password" autocomplete="current-password" required></label>
-      <button class="primary" type="submit">Sign in →</button></form>` : `
-      <div class="admin-summary"><b>${allRooms.length}</b> rooms <b>${schedule.length}</b> schedules</div>
-      <button id="logout">Sign out</button>
-      <div class="admin-sections"><button data-admin-section="rooms" class="${state.adminSection === 'rooms' ? 'on' : ''}">Rooms</button>
-      <button data-admin-section="schedules" class="${state.adminSection === 'schedules' ? 'on' : ''}">Schedules</button></div>
-      ${state.adminSection === 'rooms' ? `<h3>Room directory</h3><div class="room-admin">${allRooms.map(r => `<div><span><b>${esc(r.name)}</b><small>Floor ${r.floor} · ${esc(r.type)}</small></span><button data-edit-room="${esc(r.id)}">Edit</button></div>`).join('')}</div><button class="outline full" id="addRoom">＋ Add room</button>` : scheduleAdmin()}
-      <p class="admin-note">Changes are saved in Supabase.</p>`}
-  </section></div>`;
-}
+
