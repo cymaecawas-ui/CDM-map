@@ -1,89 +1,64 @@
--- MySQL 8.0.16+ schema. Filename retained for existing project references;
--- this is no longer a Supabase/PostgreSQL script.
-CREATE DATABASE IF NOT EXISTS cdm_map CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE cdm_map;
+-- Run this in the Supabase SQL Editor. Supabase uses PostgreSQL.
+create extension if not exists pgcrypto;
 
-CREATE TABLE IF NOT EXISTS floors (
-  id TINYINT UNSIGNED PRIMARY KEY,
-  name VARCHAR(50) NOT NULL,
-  plan_path VARCHAR(255) NOT NULL,
-  CONSTRAINT floors_id_range CHECK (id BETWEEN 1 AND 4)
-) ENGINE=InnoDB;
+create table if not exists public.floors (
+  id smallint primary key check (id between 1 and 4),
+  name text not null,
+  plan_path text not null
+);
 
-INSERT INTO floors (id,name,plan_path) VALUES
- (1,'First Floor','/floor-plans/floor-1.png'),
- (2,'Second Floor','/floor-plans/floor-2.png'),
- (3,'Third Floor','/floor-plans/floor-3.png'),
- (4,'Fourth Floor','/floor-plans/floor-4.png')
-ON DUPLICATE KEY UPDATE name=VALUES(name),plan_path=VALUES(plan_path);
+insert into public.floors (id, name, plan_path) values
+  (1, 'First Floor', 'public/floor-plans/floor-1.png'),
+  (2, 'Second Floor', 'public/floor-plans/floor-2.png'),
+  (3, 'Third Floor', 'public/floor-plans/floor-3.png'),
+  (4, 'Fourth Floor', 'public/floor-plans/floor-4.png')
+on conflict (id) do update set name = excluded.name, plan_path = excluded.plan_path;
 
-CREATE TABLE IF NOT EXISTS rooms (
-  id VARCHAR(100) PRIMARY KEY,
-  room_name VARCHAR(150) NOT NULL,
-  room_number VARCHAR(50) NULL,
-  floor_id TINYINT UNSIGNED NOT NULL,
-  building VARCHAR(150) NOT NULL DEFAULT 'Colegio de Montalban',
-  room_type VARCHAR(40) NOT NULL DEFAULT 'Classroom',
-  capacity INT UNSIGNED NULL,
-  description TEXT NOT NULL,
-  polygon JSON NOT NULL,
-  published BOOLEAN NOT NULL DEFAULT FALSE,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT rooms_floor_fk FOREIGN KEY (floor_id) REFERENCES floors(id)
-) ENGINE=InnoDB;
+create table if not exists public.rooms (
+  id text primary key,
+  room_name text not null,
+  room_number text,
+  floor_id smallint not null references public.floors(id),
+  building text not null default 'Colegio de Montalban',
+  room_type text not null default 'Classroom',
+  capacity integer check (capacity is null or capacity >= 0),
+  description text not null default '',
+  polygon jsonb not null default '{}'::jsonb,
+  published boolean not null default true,
+  created_at timestamptz not null default now()
+);
 
-CREATE TABLE IF NOT EXISTS teachers (
-  id VARCHAR(100) PRIMARY KEY,
-  full_name VARCHAR(150) NOT NULL,
-  email VARCHAR(255) NULL,
-  active BOOLEAN NOT NULL DEFAULT TRUE,
-  UNIQUE KEY uq_teacher_name (full_name)
-) ENGINE=InnoDB;
+create table if not exists public.teachers (
+  id uuid primary key default gen_random_uuid(),
+  full_name text not null unique,
+  active boolean not null default true
+);
 
-CREATE TABLE IF NOT EXISTS subjects (
-  id VARCHAR(100) PRIMARY KEY,
-  name VARCHAR(150) NOT NULL,
-  code VARCHAR(40) NULL,
-  UNIQUE KEY uq_subject_name (name)
-) ENGINE=InnoDB;
+create table if not exists public.subjects (
+  id uuid primary key default gen_random_uuid(),
+  name text not null unique,
+  code text
+);
 
-CREATE TABLE IF NOT EXISTS sections (
-  id VARCHAR(100) PRIMARY KEY,
-  grade_level VARCHAR(40) NOT NULL,
-  section_name VARCHAR(100) NOT NULL,
-  UNIQUE KEY uq_grade_section (grade_level, section_name)
-) ENGINE=InnoDB;
+create table if not exists public.sections (
+  id uuid primary key default gen_random_uuid(),
+  grade_level text not null,
+  section_name text not null,
+  unique (grade_level, section_name)
+);
 
-CREATE TABLE IF NOT EXISTS administrators (
-  id VARCHAR(100) PRIMARY KEY,
-  username VARCHAR(100) NOT NULL,
-  password_hash VARCHAR(255) NOT NULL,
-  active BOOLEAN NOT NULL DEFAULT TRUE,
-  UNIQUE KEY uq_admin_username (username)
-) ENGINE=InnoDB;
+-- Add administrator user IDs here after creating accounts in Supabase Auth.
+create table if not exists public.administrators (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  created_at timestamptz not null default now()
+);
 
-CREATE TABLE IF NOT EXISTS schedules (
-  id VARCHAR(100) PRIMARY KEY,
-  room_id VARCHAR(100) NOT NULL,
-  teacher_id VARCHAR(100) NOT NULL,
-  subject_id VARCHAR(100) NOT NULL,
-  section_id VARCHAR(100) NOT NULL,
-  day_of_week TINYINT UNSIGNED NOT NULL COMMENT '1=Monday through 5=Friday',
-  starts_at TIME NOT NULL,
-  ends_at TIME NOT NULL,
-  published BOOLEAN NOT NULL DEFAULT FALSE,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT schedules_day_range CHECK (day_of_week BETWEEN 1 AND 5),
-  CONSTRAINT schedules_time_order CHECK (ends_at > starts_at),
-  CONSTRAINT schedules_room_fk FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE RESTRICT,
-  CONSTRAINT schedules_teacher_fk FOREIGN KEY (teacher_id) REFERENCES teachers(id) ON DELETE RESTRICT,
-  CONSTRAINT schedules_subject_fk FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE RESTRICT,
-  CONSTRAINT schedules_section_fk FOREIGN KEY (section_id) REFERENCES sections(id) ON DELETE RESTRICT,
-  INDEX schedules_room_day_time (room_id,day_of_week,starts_at,ends_at),
-  INDEX schedules_teacher_day (teacher_id,day_of_week),
-  INDEX schedules_section_day (section_id,day_of_week),
-  INDEX schedules_subject_day (subject_id,day_of_week)
-) ENGINE=InnoDB;
-
--- MySQL has no PostgreSQL-style exclusion constraint. The PHP schedule endpoint
--- serializes room changes with a transaction and rejects overlapping time ranges.
+create table if not exists public.schedules (
+  id uuid primary key default gen_random_uuid(),
+  room_id text not null constraint schedules_room_id_fkey references public.rooms(id) on delete restrict,
+  teacher_id uuid not null constraint schedules_teacher_id_fkey references public.teachers(id) on delete restrict,
+  subject_id uuid not null constraint schedules_subject_id_fkey references public.subjects(id) on delete restrict,
+  section_id uuid not null constraint schedules_section_id_fkey references public.sections(id) on delete restrict,
+  day_of_week smallint not null check (day_of_week between 1 and 5),
+  starts_at time not null,
+  ends_at time not null,
