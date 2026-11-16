@@ -1,0 +1,96 @@
+function bind() {
+  document.querySelectorAll('[data-tab]').forEach(button => button.onclick = () => {
+    state.tab = button.dataset.tab; state.selected = null; render();
+  });
+  $('#adminBtn').onclick = () => { state.adminOpen = true; render(); };
+  $('#closeAdmin')?.addEventListener('click', () => { state.adminOpen = false; render(); });
+  $('#scrim')?.addEventListener('click', event => { if (event.target.id === 'scrim') { state.adminOpen = false; render(); } });
+  $('#retryDb')?.addEventListener('click', loadDatabase);
+  $('#mapSearch')?.addEventListener('input', event => {
+    const input = event.target, start = input.selectionStart, end = input.selectionEnd;
+    state.search = input.value; render(); const next = $('#mapSearch'); next?.focus(); next?.setSelectionRange(start, end);
+  });
+  $('#classSearch')?.addEventListener('input', event => {
+    const input = event.target, start = input.selectionStart, end = input.selectionEnd;
+    state.query = input.value; render(); const next = $('#classSearch'); next?.focus(); next?.setSelectionRange(start, end);
+  });
+  document.querySelectorAll('[data-map-result]').forEach(button => button.onclick = () => {
+    const found = allRooms.find(item => item.id === button.dataset.mapResult);
+    if (found) { state.floor = found.floor; state.selected = found.id; render(); }
+  });
+  document.querySelectorAll('[data-floor]').forEach(button => button.onclick = () => {
+    state.floor = Number(button.dataset.floor); state.selected = null; render();
+  });
+  document.querySelectorAll('[data-room]').forEach(group => {
+    const select = () => { state.selected = group.dataset.room; state.floor = allRooms.find(room => room.id === state.selected)?.floor || 1; render(); };
+    group.onclick = select;
+    group.onkeydown = event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); select(); } };
+  });
+  document.querySelectorAll('[data-select]').forEach(button => button.onclick = () => { state.selected = button.dataset.select; render(); });
+  $('#clearSelection')?.addEventListener('click', () => { state.selected = null; render(); });
+  document.querySelectorAll('[data-day]').forEach(button => button.onclick = () => { state.day = Number(button.dataset.day); render(); });
+  document.querySelectorAll('[data-mode]').forEach(button => button.onclick = () => { state.mode = button.dataset.mode; render(); });
+  document.querySelectorAll('[data-suggest]').forEach(button => button.onclick = () => { state.query = button.dataset.suggest; render(); });
+  document.querySelectorAll('[data-class]').forEach(button => button.onclick = () => {
+    const item = schedule.find(row => row.id === button.dataset.class), room = allRooms.find(value => value.id === item?.roomId);
+    if (!room) return; state.tab = 'map'; state.floor = room.floor; state.selected = room.id; state.day = item.day; state.zoom = 1.2; render();
+  });
+  $('#zoomIn')?.addEventListener('click', () => { state.zoom = Math.min(2.3, state.zoom + .2); render(); });
+  $('#zoomOut')?.addEventListener('click', () => { state.zoom = Math.max(.65, state.zoom - .2); render(); });
+  $('#resetZoom')?.addEventListener('click', () => { state.zoom = 1; render(); });
+  $('[data-next]')?.addEventListener('click', findNext);
+  $('#login')?.addEventListener('submit', async event => {
+    event.preventDefault(); const form = new FormData(event.target);
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email: form.get('email'), password: form.get('password') });
+      if (error) throw error;
+      if (!(await isAdministrator(data.user.id))) { await supabase.auth.signOut(); throw new Error('This account is not listed as a campus administrator.'); }
+      state.admin = true; await loadDatabase(); state.adminOpen = true; render();
+    } catch (error) { alert('Sign in failed: ' + error.message); }
+  });
+  $('#logout')?.addEventListener('click', async () => {
+    const { error } = await supabase.auth.signOut(); if (error) { alert(error.message); return; }
+    state.admin = false; await loadDatabase(); state.adminOpen = true; render();
+  });
+  document.querySelectorAll('[data-edit-room]').forEach(button => button.onclick = async () => {
+    const room = allRooms.find(item => item.id === button.dataset.editRoom), name = prompt('Room name', room.name);
+    if (!name?.trim()) return;
+    try { unwrap(await supabase.from('rooms').update({ room_name: name.trim() }).eq('id', room.id).select('id').single()); await loadDatabase(); state.adminOpen = true; render(); }
+    catch (error) { alert(error.message); }
+  });
+  $('#addRoom')?.addEventListener('click', async () => {
+    const name = prompt('Room or facility name'); if (!name?.trim()) return;
+    const floor = Number(prompt('Floor (1–4)', '1')), template = (rows[floor] || []).find(item => item.type === 'Classroom');
+    if (!template) { alert('No classroom map position is available for that floor.'); return; }
+    const slug = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    try {
+      unwrap(await supabase.from('rooms').insert({
+        id: 'F' + floor + '-' + slug + '-' + crypto.randomUUID().slice(0, 8), room_name: name.trim(), floor_id: floor,
+        building: 'Colegio de Montalban', room_type: 'Classroom', description: 'Classroom on the ' + floorName(floor).toLowerCase() + ' floor.',
+        polygon: { x: template.x, y: template.y, w: template.w, h: template.h }, published: true,
+      }).select('id').single());
+      await loadDatabase(); state.adminOpen = true; render();
+    } catch (error) { alert(error.message); }
+  });
+  document.querySelectorAll('[data-admin-section]').forEach(button => button.onclick = () => {
+    state.adminSection = button.dataset.adminSection; state.editScheduleId = null; state.scheduleMessage = ''; render();
+  });
+  document.querySelectorAll('[data-edit-schedule]').forEach(button => button.onclick = () => {
+    state.editScheduleId = button.dataset.editSchedule; state.scheduleMessage = ''; render();
+  });
+  document.querySelectorAll('[data-delete-schedule]').forEach(button => button.onclick = async () => {
+    if (!confirm('Delete this schedule?')) return;
+    try { unwrap(await supabase.from('schedules').delete().eq('id', button.dataset.deleteSchedule).select('id').single()); await loadDatabase(); state.adminOpen = true; state.adminSection = 'schedules'; render(); }
+    catch (error) { alert(error.message); }
+  });
+  $('#cancelSchedule')?.addEventListener('click', () => { state.editScheduleId = null; state.scheduleMessage = ''; render(); });
+  $('#scheduleForm')?.addEventListener('keydown', event => {
+    if (event.key === 'Enter' && event.target.matches('input:not([type]), input[type="text"], textarea')) event.preventDefault();
+  });
+  $('#scheduleForm')?.addEventListener('submit', async event => {
+    event.preventDefault(); const form = new FormData(event.target);
+    const payload = { roomId: form.get('roomId'), day: Number(form.get('day')), time: form.get('time'), end: form.get('end'), subject: form.get('subject').trim(), teacher: form.get('teacher').trim(), section: form.get('section').trim() };
+    if (payload.end <= payload.time) { alert('The end time must be after the start time.'); return; }
+    const wasEditing = Boolean(state.editScheduleId);
+    try {
+      await saveScheduleToSupabase(payload, state.editScheduleId);
