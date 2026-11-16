@@ -1,0 +1,6 @@
+/* Keep supplied plan imagery visually untouched; only show a locator outline on hover or selection. */
+.plan .room-hit rect { fill: transparent !important; stroke: transparent !important; }
+.plan .room-hit:hover rect,
+.plan .room-hit:focus rect { fill: transparent !important; stroke: #1479a9 !important; stroke-width: 3 !important; }
+.plan .room-hit.selected rect { fill: transparent !important; stroke: #15678b !important; stroke-width: 4 !important; }
+.plan .room-hit.dimmed { opacity: 1 !important; }

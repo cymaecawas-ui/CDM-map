@@ -1,0 +1,7 @@
+{
+  "name": "cdm-campus-map",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": { "dev": "php -S 127.0.0.1:8000 -t .", "build": "node build.js", "preview": "php -S 127.0.0.1:8000 -t dist" }
+}

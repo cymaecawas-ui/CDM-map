@@ -1,0 +1,28 @@
+/* Keep supplied plan imagery visually untouched; only show a locator outline on hover or selection. */
+.plan .room-hit rect {
+  fill: transparent !important;
+  stroke: transparent !important;
+}
+.plan .room-hit:hover rect,
+.plan .room-hit:focus rect {
+  fill: transparent !important;
+  stroke: #1479a9 !important;
+  stroke-width: 3 !important;
+}
+.plan .room-hit.selected rect {
+  fill: transparent !important;
+  stroke: #15678b !important;
+  stroke-width: 4 !important;
+}
+.plan .room-hit.dimmed {
+  opacity: 1 !important;
+}
+
+/* Search results are positioned under the map directory search field. */
+.page-heading { position: relative; }
+.map-search-results { position: absolute; z-index: 30; top: calc(100% - 18px); right: 0; width: 285px; max-height: 320px; overflow-y: auto; background: #fff; border: 1px solid #dfe3e2; border-radius: 6px; box-shadow: 0 12px 28px rgba(20, 43, 60, .16); padding: 5px; }
+.map-search-results button { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 12px; border: 0; border-radius: 4px; background: transparent; padding: 10px; text-align: left; color: #243d50; cursor: pointer; }
+.map-search-results button:hover, .map-search-results button:focus { background: #eef4f4; outline: none; }
+.map-search-results small { color: #7c8b93; white-space: nowrap; }
+.map-search-results p { margin: 0; padding: 10px; color: #7c8b93; font-size: 12px; }
+@media (max-width: 760px) { .map-search-results { top: calc(100% - 18px); width: min(285px, 100%); } }
