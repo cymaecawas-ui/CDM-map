@@ -42,6 +42,27 @@ async function loadDatabase() {
     }
     render();
 }
+async function saveScheduleToSupabase(payload, existingId = null) {
+    const conflictQuery = supabase.from('schedules').select('id')
+        .eq('room_id', payload.roomId).eq('day_of_week', payload.day + 1)
+        .lt('starts_at', payload.end).gt('ends_at', payload.time);
+    if (existingId) conflictQuery.neq('id', existingId);
+    if (unwrap(await conflictQuery.limit(1)).length) throw new Error('This room already has a schedule that overlaps that time.');
+    const [subjectId, teacherId, sectionId] = await Promise.all([
+        upsertNamed('subjects', 'name', payload.subject),
+        upsertNamed('teachers', 'full_name', payload.teacher),
+        upsertSection(payload.section),
+    ]);
+    const values = {
+        room_id: payload.roomId, day_of_week: payload.day + 1,
+        starts_at: payload.time, ends_at: payload.end,
+        subject_id: subjectId, teacher_id: teacherId, section_id: sectionId, published: true,
+    };
+    const result = existingId
+        ? await supabase.from('schedules').update(values).eq('id', existingId).select('id').single()
+        : await supabase.from('schedules').insert(values).select('id').single();
+    return unwrap(result);
+}
 function status(r) { let now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila' })), d = now.getDay() - 1, m = now.getHours() * 60 + now.getMinutes(), entries = schedule.filter(s => s.roomId === r.id && s.day === d).sort((a, b) => a.time.localeCompare(b.time)); let active = entries.find(s => { let [h, x] = s.time.split(':').map(Number), [eh, ex] = s.end.split(':').map(Number); return m >= h * 60 + x && m < eh * 60 + ex }); let next = entries.find(s => { let [h, x] = s.time.split(':').map(Number); return h * 60 + x > m }); return active ? { key: 'occupied', label: 'In class', entry: active } : next ? { key: 'upcoming', label: 'Upcoming', entry: next } : entries.length ? { key: 'available', label: 'Available' } : { key: 'none', label: 'No schedule' } }
 const mapResults = () => allRooms.filter(r => !state.search || `${r.name} ${r.roomNumber || ''} ${r.type || ''}`.toLowerCase().includes(state.search.trim().toLowerCase()));
 function render() {
