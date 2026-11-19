@@ -15,6 +15,11 @@ const jsDay = new Date().getDay();
 let state = { floor: 1, selected: null, search: '', query: '', day: jsDay === 0 ? 0 : jsDay - 1, mode: 'List View', tab: 'home', zoom: 1, admin: false, adminOpen: false, adminFloor: 1, adminRoomId: null, editScheduleId: null, scheduleMessage: '' };
 const $ = s => document.querySelector(s), esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const floorName = n => ['', 'First', 'Second', 'Third', 'Fourth'][n];
+function themeToggleMarkup() {
+    const dark = document.documentElement.dataset.theme === 'dark';
+    const label = dark ? 'Light mode' : 'Dark mode';
+    return `<button type="button" id="themeToggle" class="theme-toggle" aria-label="Switch to ${label}" aria-pressed="${dark}"><span aria-hidden="true">${dark ? '☀' : '☾'}</span><span>${label}</span></button>`;
+}
 async function loadDatabase() {
     try {
         if (!supabaseConfigured || !supabase) throw new Error('Add the Supabase Project URL and publishable key in src/supabase-config.js.');
@@ -61,7 +66,7 @@ async function saveScheduleToSupabase(payload, existingId = null) {
 function status(r) { let now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila' })), d = now.getDay() - 1, m = now.getHours() * 60 + now.getMinutes(), entries = schedule.filter(s => s.roomId === r.id && s.day === d).sort((a, b) => a.time.localeCompare(b.time)); let active = entries.find(s => { let [h, x] = s.time.split(':').map(Number), [eh, ex] = s.end.split(':').map(Number); return m >= h * 60 + x && m < eh * 60 + ex }); let next = entries.find(s => { let [h, x] = s.time.split(':').map(Number); return h * 60 + x > m }); return active ? { key: 'occupied', label: 'In class', entry: active } : next ? { key: 'upcoming', label: 'Upcoming', entry: next } : entries.length ? { key: 'available', label: 'Available' } : { key: 'none', label: 'No schedule' } }
 const mapResults = () => allRooms.filter(r => !state.search || `${r.name} ${r.roomNumber || ''} ${r.type || ''}`.toLowerCase().includes(state.search.trim().toLowerCase()));
 function render() {
-    const avail = allRooms.map(status).filter(s => s.key === 'available').length, occupied = allRooms.map(status).filter(s => s.key === 'occupied').length; $('#app').innerHTML = `<header class="nav"><a class="brand" href="#" data-tab="home"><img src="./public/school-seal.jpg"><span>COLEGIO DE MONTALBAN<small>RODRIGUEZ, RIZAL</small></span></a><nav><button data-tab="home" class="${state.tab === 'home' ? 'active' : ''}">Home</button><button data-tab="map" class="${state.tab === 'map' ? 'active' : ''}">Campus map</button><button data-tab="finder" class="${state.tab === 'finder' ? 'active' : ''}">Find my classes</button></nav><button class="admin-btn" id="adminBtn">${state.admin ? 'Admin dashboard' : 'Admin login'} <span>↗</span></button></header>
+    const avail = allRooms.map(status).filter(s => s.key === 'available').length, occupied = allRooms.map(status).filter(s => s.key === 'occupied').length; $('#app').innerHTML = `<header class="nav"><a class="brand" href="#" data-tab="home"><img src="./public/school-seal.jpg"><span>COLEGIO DE MONTALBAN<small>RODRIGUEZ, RIZAL</small></span></a><nav><button data-tab="home" class="${state.tab === 'home' ? 'active' : ''}">Home</button><button data-tab="map" class="${state.tab === 'map' ? 'active' : ''}">Campus map</button><button data-tab="finder" class="${state.tab === 'finder' ? 'active' : ''}">Find my classes</button></nav>${themeToggleMarkup()}<button class="admin-btn" id="adminBtn">${state.admin ? 'Admin dashboard' : 'Admin login'} <span>↗</span></button></header>
 ${dbError ? `<div class="db-alert" role="alert"><span>Supabase connection issue: ${esc(dbError)}</span><button id="retryDb">Retry</button></div>` : ''}
 ${state.tab === 'home' ? home(avail, occupied) : state.tab === 'finder' ? finder() : mapPage()}
 <footer><div class="footbrand"><img src="./public/school-seal.jpg"><b>Colegio de Montalban</b></div><span>Campus information · Supabase schedule data</span><span>All times shown in Asia/Manila</span></footer>${state.adminOpen ? adminPanel() : ''}`; bind();
@@ -117,6 +122,13 @@ function bind() {
     state.tab = button.dataset.tab; state.selected = null; render();
   });
   $('#adminBtn').onclick = () => { state.adminOpen = true; render(); };
+  $('#themeToggle')?.addEventListener('click', () => {
+    const nextTheme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = nextTheme;
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', nextTheme === 'dark' ? '#101a13' : '#1c4a32');
+    try { localStorage.setItem('cdm-campus-theme', nextTheme); } catch { /* Preference storage may be unavailable. */ }
+    render();
+  });
   $('#closeAdmin')?.addEventListener('click', () => { state.adminOpen = false; render(); });
   $('#scrim')?.addEventListener('click', event => { if (event.target.id === 'scrim') { state.adminOpen = false; render(); } });
   $('#retryDb')?.addEventListener('click', loadDatabase);
@@ -270,4 +282,6 @@ render = function () {
         canvas.scrollTop = anchor.y * canvas.scrollHeight - canvas.clientHeight / 2;
     });
 };
+try { document.documentElement.dataset.theme = localStorage.getItem('cdm-campus-theme') === 'dark' ? 'dark' : 'light'; } catch { document.documentElement.dataset.theme = 'light'; }
+document.querySelector('meta[name="theme-color"]')?.setAttribute('content', document.documentElement.dataset.theme === 'dark' ? '#101a13' : '#1c4a32');
 setInterval(() => { if (state.tab === 'map' && !state.adminOpen) render() }, 60000); loadDatabase();
