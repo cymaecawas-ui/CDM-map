@@ -111,7 +111,7 @@ function scheduleAdmin() {
       <label>End<input name="end" type="time" value="${editing?.end || '08:45'}" required></label>
       <label>Subject<input name="subject" value="${esc(editing?.subject || '')}" required></label>
       <label>Teacher<input name="teacher" value="${esc(editing?.teacher || '')}" required></label>
-      <label>Section<input name="section" value="${esc(editing?.section || '')}" required></label>
+      <label>Program · Year/Section<input name="section" value="${esc(editing?.section || '')}" placeholder="e.g., BSCPE · 1A" required></label>
       <button class="primary" type="submit">${editing ? 'Save changes' : 'Add schedule'}</button>${editing ? '<button type="button" id="cancelSchedule" class="outline">Cancel edit</button>' : ''}
     </form>
     <div class="admin-schedule-heading"><h3>Schedules for this room</h3>${roomSchedules.length ? `<small>${roomSchedules.length} total</small>` : ''}</div>
