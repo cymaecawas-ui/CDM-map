@@ -156,3 +156,179 @@ footer .footbrand { color: #285239; }
 .map-search-results button { color: #285239; }
 .map-search-results button:hover,
 .map-search-results button:focus { background: #edf5e9; }
+
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 9px 11px;
+  border: 1px solid #cbdac8;
+  border-radius: 5px;
+  background: #fff;
+  color: #285239;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.theme-toggle:hover { background: #edf5e9; }
+.theme-toggle span:first-child { color: #a1841e; font-size: 15px; line-height: 1; }
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+  color: #e5eee3;
+  background: #101a13;
+  --navy: #dce9dc;
+  --blue: #8abd83;
+  --muted: #a1b09f;
+  --line: #304536;
+  --cream: #1a2a1e;
+  --green: #8abd83;
+  --forest: #28583a;
+  --leaf: #8abd83;
+  --soft-green: #203a28;
+  --sunshine: #e7c94f;
+  --soft-yellow: #3a3218;
+  --white: #18271c;
+}
+html[data-theme="dark"] body,
+html[data-theme="dark"] .workspace { color: #e5eee3; background: #101a13; }
+html[data-theme="dark"] .nav,
+html[data-theme="dark"] .map-card,
+html[data-theme="dark"] .details,
+html[data-theme="dark"] .floating-stat,
+html[data-theme="dark"] .floor-chip,
+html[data-theme="dark"] .feature,
+html[data-theme="dark"] .searchbox,
+html[data-theme="dark"] .finder-search,
+html[data-theme="dark"] .suggestions,
+html[data-theme="dark"] .suggestions button,
+html[data-theme="dark"] .result-card,
+html[data-theme="dark"] .week-grid > section,
+html[data-theme="dark"] .finder-empty,
+html[data-theme="dark"] footer,
+html[data-theme="dark"] .admin-modal,
+html[data-theme="dark"] .admin-room-schedules,
+html[data-theme="dark"] .map-search-results {
+  color: #e5eee3;
+  border-color: #304536;
+  background-color: #18271c;
+}
+html[data-theme="dark"] .feature-strip { background: #142219; }
+html[data-theme="dark"] .feature:hover { background: #203a28; }
+html[data-theme="dark"] .nav { border-bottom-color: #304536; }
+html[data-theme="dark"] .brand,
+html[data-theme="dark"] .nav nav button.active,
+html[data-theme="dark"] .page-heading h1,
+html[data-theme="dark"] .hero h1,
+html[data-theme="dark"] .empty-details h3,
+html[data-theme="dark"] .details h2,
+html[data-theme="dark"] .finder-empty h3,
+html[data-theme="dark"] .admin-modal h2,
+html[data-theme="dark"] .admin-modal h3,
+html[data-theme="dark"] .result-subject b,
+html[data-theme="dark"] .result-room b,
+html[data-theme="dark"] .week-grid h3,
+html[data-theme="dark"] footer .footbrand { color: #e5eee3; }
+html[data-theme="dark"] .brand small,
+html[data-theme="dark"] .nav nav button,
+html[data-theme="dark"] .hero-copy > p,
+html[data-theme="dark"] .hero-meta,
+html[data-theme="dark"] .page-heading p,
+html[data-theme="dark"] .empty-details p,
+html[data-theme="dark"] .muted,
+html[data-theme="dark"] .finder-empty p,
+html[data-theme="dark"] .result-subject small,
+html[data-theme="dark"] .result-room small,
+html[data-theme="dark"] .date-square small,
+html[data-theme="dark"] .admin-summary,
+html[data-theme="dark"] .admin-note,
+html[data-theme="dark"] .admin-modal label,
+html[data-theme="dark"] .admin-panel-heading small,
+html[data-theme="dark"] .admin-schedule-heading small,
+html[data-theme="dark"] footer { color: #a1b09f; }
+html[data-theme="dark"] .hero h1 em,
+html[data-theme="dark"] .feature .arrow,
+html[data-theme="dark"] .quick-room span,
+html[data-theme="dark"] .admin-summary b { color: #8abd83; }
+html[data-theme="dark"] .primary { color: #fff; background: #28583a; border-color: #4e8151; }
+html[data-theme="dark"] .primary:hover { background: #357449; }
+html[data-theme="dark"] .secondary,
+html[data-theme="dark"] .outline,
+html[data-theme="dark"] .admin-btn,
+html[data-theme="dark"] .theme-toggle,
+html[data-theme="dark"] .admin-floor-tabs button,
+html[data-theme="dark"] .zoom-tools button,
+html[data-theme="dark"] .tiny-map,
+html[data-theme="dark"] .show-map,
+html[data-theme="dark"] .admin-schedule-actions button,
+html[data-theme="dark"] .quick-room,
+html[data-theme="dark"] .finder-empty button {
+  color: #d8e8d5;
+  border-color: #49624b;
+  background: #1b3021;
+}
+html[data-theme="dark"] .secondary:hover,
+html[data-theme="dark"] .outline:hover,
+html[data-theme="dark"] .admin-btn:hover,
+html[data-theme="dark"] .theme-toggle:hover,
+html[data-theme="dark"] .admin-floor-tabs button:hover,
+html[data-theme="dark"] .zoom-tools button:hover,
+html[data-theme="dark"] .tiny-map:hover,
+html[data-theme="dark"] .show-map:hover,
+html[data-theme="dark"] .admin-schedule-actions button:hover,
+html[data-theme="dark"] .quick-room:hover,
+html[data-theme="dark"] .finder-empty button:hover,
+html[data-theme="dark"] .suggestions button:hover { background: #26422c; }
+html[data-theme="dark"] .theme-toggle span:first-child { color: #e7c94f; }
+html[data-theme="dark"] .eyebrow,
+html[data-theme="dark"] .section-label { color: #9bc88c; }
+html[data-theme="dark"] .admin-floor-tabs button.chosen,
+html[data-theme="dark"] .day-pills button.on,
+html[data-theme="dark"] .view-tabs button.on,
+html[data-theme="dark"] .day-select button.on { color: #fff; border-color: #4e8151; background: #28583a; }
+html[data-theme="dark"] .map-canvas { background-color: #142219; background-image: radial-gradient(#2b4431 1px, transparent 1px); }
+html[data-theme="dark"] .plan .room-hit:hover rect,
+html[data-theme="dark"] .plan .room-hit:focus rect { stroke: #9bc88c !important; }
+html[data-theme="dark"] .plan .room-hit.selected rect { stroke: #e7c94f !important; }
+html[data-theme="dark"] .map-legend,
+html[data-theme="dark"] .map-legend small,
+html[data-theme="dark"] .map-watermark { color: #a1b09f; }
+html[data-theme="dark"] .type-chip,
+html[data-theme="dark"] .date-square,
+html[data-theme="dark"] .icon,
+html[data-theme="dark"] .icon.green { color: #abd49d; background: #203a28; }
+html[data-theme="dark"] .icon.sun,
+html[data-theme="dark"] .icon.amber,
+html[data-theme="dark"] .week-grid .date-square,
+html[data-theme="dark"] .demo-tag { color: #e7d36e; background: #3a3218; }
+html[data-theme="dark"] .admin-room-schedules .schedule-form,
+html[data-theme="dark"] .no-classes,
+html[data-theme="dark"] .day-empty { background: #142219; border-color: #304536; }
+html[data-theme="dark"] .admin-room-schedules .schedule-form input,
+html[data-theme="dark"] .admin-room-schedules .schedule-form select,
+html[data-theme="dark"] .admin-modal input,
+html[data-theme="dark"] .admin-modal select,
+html[data-theme="dark"] .searchbox input,
+html[data-theme="dark"] .finder-search input {
+  color: #e5eee3;
+  border-color: #405a43;
+  background: #142219;
+}
+html[data-theme="dark"] input::placeholder { color: #819483; }
+html[data-theme="dark"] .view-tabs { background: #1f3223; }
+html[data-theme="dark"] .admin-schedule-row { border-color: #304536; }
+html[data-theme="dark"] .admin-schedule-row.editing { background: #203a28; }
+html[data-theme="dark"] .admin-schedule-row span { color: #cfe2ca; }
+html[data-theme="dark"] .admin-schedule-row small,
+html[data-theme="dark"] .admin-empty-schedules,
+html[data-theme="dark"] .admin-no-room { color: #a1b09f; }
+html[data-theme="dark"] .admin-schedule-message { color: #cfe2ca; background: #203a28; }
+html[data-theme="dark"] .map-search-results button { color: #d8e8d5; }
+html[data-theme="dark"] .map-search-results button:hover,
+html[data-theme="dark"] .map-search-results button:focus { background: #26422c; }
+html[data-theme="dark"] .admin-schedule-actions button[data-delete-schedule] { color: #f2a49b; }
+
+@media (max-width: 620px) {
+  .theme-toggle { width: 34px; height: 34px; padding: 0; }
+  .theme-toggle span:nth-child(2) { display: none; }
+}
