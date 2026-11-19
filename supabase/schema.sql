@@ -59,7 +59,7 @@ create table if not exists public.schedules (
   teacher_id uuid not null constraint schedules_teacher_id_fkey references public.teachers(id) on delete restrict,
   subject_id uuid not null constraint schedules_subject_id_fkey references public.subjects(id) on delete restrict,
   section_id uuid not null constraint schedules_section_id_fkey references public.sections(id) on delete restrict,
-  day_of_week smallint not null check (day_of_week between 1 and 5),
+  day_of_week smallint not null check (day_of_week between 1 and 6),
   starts_at time not null,
   ends_at time not null,
   published boolean not null default true,
