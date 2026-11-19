@@ -3,6 +3,158 @@
   border-bottom: 1px solid #e7eae7;
   margin: 15px 0;
 }
+
+/* Map-first schedule management */
+.admin-modal.admin-dashboard-modal {
+  width: min(1180px, 100%);
+  max-height: 92vh;
+  padding: 24px;
+}
+.admin-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin: 10px 0 16px;
+}
+.admin-toolbar .admin-summary { margin: 0; }
+.admin-toolbar-actions,
+.admin-floor-tabs,
+.admin-schedule-actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.admin-map-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(340px, .9fr);
+  gap: 18px;
+  align-items: start;
+}
+.admin-map-panel,
+.admin-room-schedules { min-width: 0; }
+.admin-panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 0 9px;
+}
+.admin-panel-heading h3,
+.admin-schedule-heading h3 { margin: 0; }
+.admin-panel-heading small,
+.admin-schedule-heading small {
+  color: #839098;
+  font-size: 10px;
+}
+.admin-floor-tabs { margin: 0 0 8px; }
+.admin-floor-tabs button {
+  border: 1px solid #e1e6e3;
+  border-radius: 3px;
+  background: #fff;
+  color: #516778;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+.admin-floor-tabs button.chosen {
+  border-color: #3684a1;
+  background: #eaf4f6;
+  color: #244c65;
+}
+.admin-floor-tabs sup { margin-left: 1px; font-size: 7px; }
+.admin-map-canvas {
+  height: 420px;
+  min-height: 260px;
+  border: 1px solid #e5e6e2;
+  border-radius: 4px;
+}
+.admin-map-canvas .plan {
+  width: auto;
+  height: 100%;
+  aspect-ratio: 16 / 9;
+  flex: 0 0 auto;
+}
+.admin-edit-room { margin-top: 9px; cursor: pointer; }
+.admin-edit-room:disabled { opacity: .5; cursor: not-allowed; }
+.admin-room-schedules {
+  border: 1px solid #e8ebe8;
+  border-radius: 4px;
+  padding: 14px;
+  background: #fff;
+}
+.admin-room-schedules .admin-panel-heading { margin-bottom: 12px; }
+.admin-room-schedules .admin-panel-heading h3 { font-size: 17px; }
+.admin-schedule-message {
+  padding: 8px 10px;
+  border-radius: 3px;
+  background: #eef7f0;
+  color: #386e4a;
+  font-size: 11px;
+}
+.admin-room-schedules .schedule-form {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+  padding: 12px;
+  max-width: none;
+}
+.admin-room-schedules .schedule-form label { min-width: 0; }
+.admin-room-schedules .schedule-form input,
+.admin-room-schedules .schedule-form select { box-sizing: border-box; }
+.admin-room-schedules .schedule-form button { grid-column: 1 / -1; }
+.admin-schedule-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 16px 0 8px;
+}
+.admin-schedule-list {
+  max-height: 280px;
+  overflow: auto;
+  border: 1px solid #ebedeb;
+  border-radius: 3px;
+}
+.admin-schedule-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px;
+  border-bottom: 1px solid #f0f1ef;
+}
+.admin-schedule-row:last-child { border-bottom: 0; }
+.admin-schedule-row.editing { background: #f1f7f8; }
+.admin-schedule-row > div:first-child { min-width: 0; }
+.admin-schedule-row b,
+.admin-schedule-row span,
+.admin-schedule-row small { display: block; font-size: 10px; }
+.admin-schedule-row span { margin-top: 3px; color: #33566d; }
+.admin-schedule-row small { margin-top: 2px; color: #87939a; }
+.admin-schedule-actions { flex: 0 0 auto; }
+.admin-schedule-actions button {
+  border: 1px solid #dfe5e2;
+  border-radius: 3px;
+  background: #fff;
+  color: #3e6577;
+  padding: 6px 8px;
+  font-size: 9px;
+  cursor: pointer;
+}
+.admin-empty-schedules,
+.admin-no-room { color: #859198; font-size: 11px; }
+@media (max-width: 850px) {
+  .admin-map-layout { grid-template-columns: minmax(0, 1fr); }
+  .admin-map-canvas { height: min(55vw, 400px); min-height: 240px; }
+  .admin-schedule-list { max-height: 220px; }
+}
+@media (max-width: 520px) {
+  .admin-modal.admin-dashboard-modal { padding: 18px 12px; }
+  .admin-toolbar { align-items: flex-start; flex-direction: column; }
+  .admin-toolbar-actions { width: 100%; }
+  .admin-room-schedules .schedule-form { grid-template-columns: minmax(0, 1fr); }
+  .admin-room-schedules .schedule-form button { grid-column: auto; }
+  .admin-map-canvas { min-height: 200px; }
+}
 .admin-sections button {
   border: 0;
   background: transparent;
