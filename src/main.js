@@ -12,7 +12,7 @@ let schedule = [];
 let dbError = '';
 const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const jsDay = new Date().getDay();
-let state = { floor: 1, selected: null, search: '', query: '', day: jsDay === 0 ? 0 : jsDay - 1, mode: 'List View', tab: 'home', zoom: 1, admin: false, adminOpen: false, adminSection: 'rooms', editScheduleId: null, scheduleMessage: '' };
+let state = { floor: 1, selected: null, search: '', query: '', day: jsDay === 0 ? 0 : jsDay - 1, mode: 'List View', tab: 'home', zoom: 1, admin: false, adminOpen: false, adminFloor: 1, adminRoomId: null, editScheduleId: null, scheduleMessage: '' };
 const $ = s => document.querySelector(s), esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const floorName = n => ['', 'First', 'Second', 'Third', 'Fourth'][n];
 async function loadDatabase() {
@@ -25,6 +25,9 @@ async function loadDatabase() {
         rows = { 1: [], 2: [], 3: [], 4: [] };
         allRooms.forEach(item => { (rows[item.floor] ||= []).push(item); });
         schedule = scheduleRows.map(mapSchedule);
+        if (!allRooms.some(item => item.id === state.adminRoomId)) state.adminRoomId = allRooms[0]?.id || null;
+        const adminRoom = allRooms.find(item => item.id === state.adminRoomId);
+        if (adminRoom) state.adminFloor = adminRoom.floor;
         state.admin = await isAdministrator(authData.session?.user?.id);
         dbError = '';
     } catch (error) {
@@ -70,22 +73,45 @@ function finder() { let q = state.query.toLowerCase(), matches = schedule.filter
 function resultView(ms) { if (state.mode === 'Weekly View') return `<div class="week-grid">${WEEKDAYS.map((d, i) => `<section><h3>${d}</h3>${ms.filter(s => s.day === i).map(card).join('') || '<p class="day-empty">No classes</p>'}</section>`).join('')}</div>`; if (state.mode === 'Daily View') return `<div class="day-select">${WEEKDAYS.map((d, i) => `<button data-day="${i}" class="${state.day === i ? 'on' : ''}">${d}</button>`).join('')}</div><div class="result-list">${ms.filter(s => s.day === state.day).map(card).join('') || '<p class="day-empty">No classes on this day.</p>'}</div>`; return `<div class="result-list">${ms.map(card).join('')}</div>` }
 function card(s) { let r = allRooms.find(x => x.id === s.roomId); return `<article class="result-card"><div class="date-square"><b>${['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'][s.day]}</b><small>${s.time}</small></div><div class="result-subject"><b>${esc(s.subject)}</b><small>${esc(s.teacher)} · ${esc(s.section)}</small></div><div class="result-room"><small>ROOM · FLOOR ${r.floor}</small><b>${esc(r.name)}</b></div><button class="show-map" data-class="${s.id}">SHOW ON MAP <span>↗</span></button></article>` }
 function adminPanel() {
-  return `<div class="modal-scrim" id="scrim"><section class="admin-modal">
+  return `<div class="modal-scrim" id="scrim"><section class="admin-modal ${state.admin ? 'admin-dashboard-modal' : ''}">
     <button class="close" id="closeAdmin">×</button><div class="eyebrow">CAMPUS MANAGEMENT</div>
     <h2>${state.admin ? 'Admin dashboard' : 'Administrator sign in'}</h2>
     ${!state.admin ? `<p>Use the administrator email and password created in Supabase Auth.</p>
       <form id="login"><label>Email<input name="email" type="email" autocomplete="username" required></label>
       <label>Password<input name="password" type="password" autocomplete="current-password" required></label>
       <button class="primary" type="submit">Sign in →</button></form>` : `
-      <div class="admin-summary"><b>${allRooms.length}</b> rooms <b>${schedule.length}</b> schedules</div>
-      <button id="logout">Sign out</button>
-      <div class="admin-sections"><button data-admin-section="rooms" class="${state.adminSection === 'rooms' ? 'on' : ''}">Rooms</button>
-      <button data-admin-section="schedules" class="${state.adminSection === 'schedules' ? 'on' : ''}">Schedules</button></div>
-      ${state.adminSection === 'rooms' ? `<h3>Room directory</h3><div class="room-admin">${allRooms.map(r => `<div><span><b>${esc(r.name)}</b><small>Floor ${r.floor} · ${esc(r.type)}</small></span><button data-edit-room="${esc(r.id)}">Edit</button></div>`).join('')}</div><button class="outline full" id="addRoom">＋ Add room</button>` : scheduleAdmin()}
-      <p class="admin-note">Changes are saved in Supabase.</p>`}
+      <div class="admin-toolbar"><div class="admin-summary"><b>${allRooms.length}</b> rooms <b>${schedule.length}</b> schedules</div><div class="admin-toolbar-actions"><button id="addRoom" class="outline">＋ Add room</button><button id="logout" class="outline">Sign out</button></div></div>
+      <div class="admin-map-layout">
+        <section class="admin-map-panel">
+          <div class="admin-panel-heading"><h3>Select a room</h3><small>Choose a floor, then click a room on the map.</small></div>
+          <div class="admin-floor-tabs">${[1, 2, 3, 4].map(n => `<button data-admin-floor="${n}" class="${state.adminFloor === n ? 'chosen' : ''}">${n}<sup>${['', 'ST', 'ND', 'RD', 'TH'][n]}</sup></button>`).join('')}</div>
+          <div class="map-canvas admin-map-canvas"><div class="plan"><img src="./public/floor-plans/floor-${state.adminFloor}.png" alt="${floorName(state.adminFloor)} floor plan"><svg viewBox="0 0 1920 1080" role="group" aria-label="Select a room on the ${floorName(state.adminFloor)} floor">${(rows[state.adminFloor] || []).map(r => { const st = status(r); return `<g class="room-hit ${st.key} ${state.adminRoomId === r.id ? 'selected' : ''}" data-admin-room="${esc(r.id)}" tabindex="0" role="button" aria-label="Select ${esc(r.name)}"><rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" rx="4"/><title>${esc(r.name)}</title></g>`; }).join('')}</svg></div></div>
+          <button id="editSelectedRoom" class="outline admin-edit-room" ${state.adminRoomId ? '' : 'disabled'}>Edit selected room name</button>
+        </section>
+        <section class="admin-room-schedules">${scheduleAdmin()}</section>
+      </div>
+      <p class="admin-note">Schedule changes are saved in Supabase.</p>`}
   </section></div>`;
 }
-function scheduleAdmin() { let editing = schedule.find(s => s.id === state.editScheduleId); return `<h3>${editing ? 'Edit schedule' : 'Add a schedule'}</h3><form id="scheduleForm" class="schedule-form"><label>Room<select name="roomId">${allRooms.map(r => `<option value="${r.id}" ${editing?.roomId === r.id ? 'selected' : ''}>${esc(r.name)} · Floor ${r.floor}</option>`).join('')}</select></label><label>Day<select name="day">${WEEKDAYS.map((d, i) => `<option value="${i}" ${editing?.day === i ? 'selected' : ''}>${d}</option>`).join('')}</select></label><label>Start<input name="time" type="time" value="${editing?.time || '08:00'}" required></label><label>End<input name="end" type="time" value="${editing?.end || '08:45'}" required></label><label>Subject<input name="subject" value="${esc(editing?.subject || '')}" required></label><label>Teacher<input name="teacher" value="${esc(editing?.teacher || '')}" required></label><label>Section<input name="section" value="${esc(editing?.section || '')}" required></label><button class="primary" type="submit">${editing ? 'Save schedule' : 'Add schedule'}</button>${editing ? '<button type="button" id="cancelSchedule">Cancel edit</button>' : ''}</form><h3>Weekly schedule records</h3><div class="room-admin">${schedule.slice(0, 100).map(s => { let r = allRooms.find(x => x.id === s.roomId); return `<div><span><b>${esc(s.subject)} · ${esc(r?.name || 'Room')}</b><small>${WEEKDAYS[s.day]?.slice(0, 3)} ${s.time}–${s.end} · ${esc(s.teacher)} · ${esc(s.section)}</small></span><button data-edit-schedule="${s.id}">Edit</button></div>` }).join('')}</div><p class="admin-note">Showing up to 100 records. Schedules with overlapping times in the same room and day are rejected.</p>` }
+function scheduleAdmin() {
+  const selectedRoom = allRooms.find(r => r.id === state.adminRoomId);
+  const editing = schedule.find(s => s.id === state.editScheduleId && s.roomId === state.adminRoomId);
+  const roomSchedules = schedule.filter(s => s.roomId === state.adminRoomId).sort((a, b) => a.day - b.day || a.time.localeCompare(b.time));
+  if (!selectedRoom) return '<div class="admin-no-room">No rooms are available. Check the room data in Supabase.</div>';
+  return `<div class="admin-panel-heading"><div><h3>${esc(selectedRoom.name)}</h3><small>Floor ${selectedRoom.floor} · ${roomSchedules.length} schedule${roomSchedules.length === 1 ? '' : 's'}</small></div></div>
+    ${state.scheduleMessage ? `<p class="admin-schedule-message" role="status">${esc(state.scheduleMessage)}</p>` : ''}
+    <form id="scheduleForm" class="schedule-form"><input type="hidden" name="roomId" value="${esc(selectedRoom.id)}">
+      <label>Day<select name="day">${WEEKDAYS.map((d, i) => `<option value="${i}" ${editing?.day === i ? 'selected' : ''}>${d}</option>`).join('')}</select></label>
+      <label>Start<input name="time" type="time" value="${editing?.time || '08:00'}" required></label>
+      <label>End<input name="end" type="time" value="${editing?.end || '08:45'}" required></label>
+      <label>Subject<input name="subject" value="${esc(editing?.subject || '')}" required></label>
+      <label>Teacher<input name="teacher" value="${esc(editing?.teacher || '')}" required></label>
+      <label>Section<input name="section" value="${esc(editing?.section || '')}" required></label>
+      <button class="primary" type="submit">${editing ? 'Save changes' : 'Add schedule'}</button>${editing ? '<button type="button" id="cancelSchedule" class="outline">Cancel edit</button>' : ''}
+    </form>
+    <div class="admin-schedule-heading"><h3>Schedules for this room</h3>${roomSchedules.length ? `<small>${roomSchedules.length} total</small>` : ''}</div>
+    <div class="admin-schedule-list">${roomSchedules.map(s => `<article class="admin-schedule-row ${state.editScheduleId === s.id ? 'editing' : ''}"><div><b>${WEEKDAYS[s.day]} · ${s.time}–${s.end}</b><span>${esc(s.subject)}</span><small>${esc(s.teacher)} · ${esc(s.section)}</small></div><div class="admin-schedule-actions"><button type="button" data-edit-schedule="${esc(s.id)}">Edit</button><button type="button" data-delete-schedule="${esc(s.id)}" aria-label="Delete ${esc(s.subject)}">Delete</button></div></article>`).join('') || '<p class="admin-empty-schedules">No schedules for this room yet. Add one above.</p>'}</div>`;
+}
 function bind() {
   document.querySelectorAll('[data-tab]').forEach(button => button.onclick = () => {
     state.tab = button.dataset.tab; state.selected = null; render();
@@ -108,6 +134,19 @@ function bind() {
   });
   document.querySelectorAll('[data-floor]').forEach(button => button.onclick = () => {
     state.floor = Number(button.dataset.floor); state.selected = null; render();
+  });
+  document.querySelectorAll('[data-admin-floor]').forEach(button => button.onclick = () => {
+    state.adminFloor = Number(button.dataset.adminFloor); render();
+  });
+  document.querySelectorAll('[data-admin-room]').forEach(group => {
+    const select = () => {
+      state.adminRoomId = group.dataset.adminRoom;
+      state.editScheduleId = null;
+      state.scheduleMessage = '';
+      render();
+    };
+    group.onclick = select;
+    group.onkeydown = event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); select(); } };
   });
   document.querySelectorAll('[data-room]').forEach(group => {
     const select = () => { state.selected = group.dataset.room; state.floor = allRooms.find(room => room.id === state.selected)?.floor || 1; render(); };
@@ -146,17 +185,28 @@ function bind() {
     try { unwrap(await supabase.from('rooms').update({ room_name: name.trim() }).eq('id', room.id).select('id').single()); await loadDatabase(); state.adminOpen = true; render(); }
     catch (error) { alert(error.message); }
   });
+  $('#editSelectedRoom')?.addEventListener('click', async () => {
+    const room = allRooms.find(item => item.id === state.adminRoomId);
+    if (!room) return;
+    const name = prompt('Room name', room.name);
+    if (!name?.trim()) return;
+    try {
+      unwrap(await supabase.from('rooms').update({ room_name: name.trim() }).eq('id', room.id).select('id').single());
+      await loadDatabase(); state.adminOpen = true; render();
+    } catch (error) { alert(error.message); }
+  });
   $('#addRoom')?.addEventListener('click', async () => {
     const name = prompt('Room or facility name'); if (!name?.trim()) return;
     const floor = Number(prompt('Floor (1–4)', '1')), template = (rows[floor] || []).find(item => item.type === 'Classroom');
     if (!template) { alert('No classroom map position is available for that floor.'); return; }
     const slug = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
     try {
-      unwrap(await supabase.from('rooms').insert({
+      const inserted = unwrap(await supabase.from('rooms').insert({
         id: 'F' + floor + '-' + slug + '-' + crypto.randomUUID().slice(0, 8), room_name: name.trim(), floor_id: floor,
         building: 'Colegio de Montalban', room_type: 'Classroom', description: 'Classroom on the ' + floorName(floor).toLowerCase() + ' floor.',
         polygon: { x: template.x, y: template.y, w: template.w, h: template.h }, published: true,
       }).select('id').single());
+      state.adminRoomId = inserted.id; state.adminFloor = floor;
       await loadDatabase(); state.adminOpen = true; render();
     } catch (error) { alert(error.message); }
   });
@@ -164,7 +214,11 @@ function bind() {
     state.adminSection = button.dataset.adminSection; state.editScheduleId = null; state.scheduleMessage = ''; render();
   });
   document.querySelectorAll('[data-edit-schedule]').forEach(button => button.onclick = () => {
-    state.editScheduleId = button.dataset.editSchedule; state.scheduleMessage = ''; render();
+    const entry = schedule.find(item => item.id === button.dataset.editSchedule);
+    if (!entry) return;
+    state.editScheduleId = entry.id; state.adminRoomId = entry.roomId;
+    state.adminFloor = allRooms.find(room => room.id === entry.roomId)?.floor || state.adminFloor;
+    state.scheduleMessage = ''; render();
   });
   document.querySelectorAll('[data-delete-schedule]').forEach(button => button.onclick = async () => {
     if (!confirm('Delete this schedule?')) return;
@@ -193,14 +247,13 @@ function bind() {
 }
 function findNext() {
   const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila' }));
-  const day = now.getDay() >= 1 && now.getDay() <= 5 ? now.getDay() - 1 : 0;
+  const day = now.getDay() >= 1 && now.getDay() <= 6 ? now.getDay() - 1 : 0;
   const minutes = now.getHours() * 60 + now.getMinutes();
   const item = [...schedule].sort((a,b) => a.day-b.day || a.time.localeCompare(b.time)).find(row => row.day > day || (row.day === day && row.time > now.toTimeString().slice(0,5)));
   if (!item) { alert('No more classes are scheduled for the school week.'); return; }
   const room = allRooms.find(value => value.id === item.roomId); if (!room) return;
   state.tab='map'; state.floor=room.floor; state.selected=room.id; state.day=item.day; state.zoom=1.2; render();
 }
-scheduleAdmin = function () { let editing = schedule.find(s => s.id === state.editScheduleId); return `<h3>${editing ? 'Edit schedule' : 'Add a schedule'}</h3>${state.scheduleMessage ? `<p class="admin-note">${esc(state.scheduleMessage)}</p>` : ''}<form id="scheduleForm" class="schedule-form"><label>Room<select name="roomId" required>${allRooms.map(r => `<option value="${esc(r.id)}" ${editing?.roomId === r.id ? 'selected' : ''}>${esc(r.name)} · Floor ${r.floor}</option>`).join('')}</select></label><label>Day<select name="day">${WEEKDAYS.map((d, i) => `<option value="${i}" ${editing?.day === i ? 'selected' : ''}>${d}</option>`).join('')}</select></label><label>Start<input name="time" type="time" value="${editing?.time || '08:00'}" required></label><label>End<input name="end" type="time" value="${editing?.end || '08:45'}" required></label><label>Subject<input name="subject" value="${esc(editing?.subject || '')}" required></label><label>Teacher<input name="teacher" value="${esc(editing?.teacher || '')}" required></label><label>Section<input name="section" value="${esc(editing?.section || '')}" required></label><button class="primary" type="submit">${editing ? 'Save schedule' : 'Add schedule'}</button>${editing ? '<button type="button" id="cancelSchedule">Cancel edit</button>' : ''}</form><h3>Weekly schedule records</h3><div class="room-admin">${schedule.map(s => { let r = allRooms.find(x => x.id === s.roomId); return `<div><span><b>${esc(s.subject)} · ${esc(r?.name || 'Room')}</b><small>${WEEKDAYS[s.day]?.slice(0, 3)} ${s.time}–${s.end} · ${esc(s.teacher)} · ${esc(s.section)}</small></span><button data-edit-schedule="${esc(s.id)}">Edit</button><button data-delete-schedule="${esc(s.id)}">Delete</button></div>` }).join('')}</div>` };
 // Preserve the visible map center when a render rebuilds its DOM after zoom or selection.
 const renderBeforeMapScrollRestore = render;
 render = function () {
