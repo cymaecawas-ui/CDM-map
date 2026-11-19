@@ -10,7 +10,9 @@ let rows = {
 let allRooms = [];
 let schedule = [];
 let dbError = '';
-let state = { floor: 1, selected: null, search: '', query: '', day: new Date().getDay() >= 1 && new Date().getDay() <= 5 ? new Date().getDay() - 1 : 0, mode: 'List View', tab: 'home', zoom: 1, admin: false, adminOpen: false, adminSection: 'rooms', editScheduleId: null, scheduleMessage: '' };
+const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const jsDay = new Date().getDay();
+let state = { floor: 1, selected: null, search: '', query: '', day: jsDay === 0 ? 0 : jsDay - 1, mode: 'List View', tab: 'home', zoom: 1, admin: false, adminOpen: false, adminSection: 'rooms', editScheduleId: null, scheduleMessage: '' };
 const $ = s => document.querySelector(s), esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const floorName = n => ['', 'First', 'Second', 'Third', 'Fourth'][n];
 async function loadDatabase() {
