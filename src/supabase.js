@@ -44,11 +44,13 @@ export function mapRoom(row) {
 
 export function mapSchedule(row) {
   const two = value => String(value || '').slice(0, 5);
+  const sectionProgram = row.section?.grade_level || '';
+  const sectionName = row.section?.section_name || '';
   return {
     id: row.id, roomId: row.room_id, day: Number(row.day_of_week) - 1,
     time: two(row.starts_at), end: two(row.ends_at),
     subject: row.subject?.name || '', teacher: row.teacher?.full_name || '',
-    section: `${row.section?.grade_level || ''} · ${row.section?.section_name || ''}`.trim(),
+    section: !sectionProgram || sectionProgram === 'General' ? sectionName : `${sectionProgram} · ${sectionName}`,
     room: row.room?.room_name, floor: Number(row.room?.floor_id || 0), demo: false,
   };
 }
@@ -66,11 +68,7 @@ export async function upsertNamed(table, column, value) {
 }
 
 export async function upsertSection(label) {
-  // Store the college program in grade_level and the year/section in section_name.
-  // Use a middle dot or vertical bar as separator so hyphenated program codes remain intact.
-  const match = String(label).trim().match(/^(.+?)\s*(?:·|\|)\s*(.+)$/);
-  const grade_level = match ? match[1].trim() : 'General';
-  const section_name = match ? match[2].trim() : String(label).trim();
-  const data = unwrap(await supabase.from('sections').upsert({ grade_level, section_name }, { onConflict: 'grade_level,section_name' }).select('id').single());
+  const section_name = String(label).trim();
+  const data = unwrap(await supabase.from('sections').upsert({ grade_level: '', section_name }, { onConflict: 'grade_level,section_name' }).select('id').single());
   return data.id;
 }
