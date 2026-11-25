@@ -10,7 +10,6 @@ let rows = {
 let allRooms = [];
 let schedule = [];
 let dbError = '';
-let roomMutationInProgress = false;
 const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const jsDay = new Date().getDay();
 let state = { floor: 1, selected: null, search: '', query: '', day: jsDay === 0 ? 0 : jsDay - 1, mode: 'List View', tab: 'home', zoom: 1, admin: false, adminOpen: false, adminFloor: 1, adminRoomId: null, editScheduleId: null, scheduleMessage: '' };
@@ -118,39 +117,6 @@ function scheduleAdmin() {
     <div class="admin-schedule-heading"><h3>Schedules for this room</h3>${roomSchedules.length ? `<small>${roomSchedules.length} total</small>` : ''}</div>
     <div class="admin-schedule-list">${roomSchedules.map(s => `<article class="admin-schedule-row ${state.editScheduleId === s.id ? 'editing' : ''}"><div><b>${WEEKDAYS[s.day]} · ${s.time}–${s.end}</b><span>${esc(s.subject)}</span><small>${esc(s.teacher)} · ${esc(s.section)}</small></div><div class="admin-schedule-actions"><button type="button" data-edit-schedule="${esc(s.id)}">Edit</button><button type="button" data-delete-schedule="${esc(s.id)}" aria-label="Delete ${esc(s.subject)}">Delete</button></div></article>`).join('') || '<p class="admin-empty-schedules">No schedules for this room yet. Add one above.</p>'}</div>`;
 }
-async function withRoomButtonBusy(button, label, action) {
-  if (roomMutationInProgress) return;
-  roomMutationInProgress = true;
-  const originalMarkup = button?.innerHTML;
-  if (button) {
-    button.disabled = true;
-    button.classList.add('is-loading');
-    button.setAttribute('aria-busy', 'true');
-    button.innerHTML = `<span class="button-spinner" aria-hidden="true"></span>${label}`;
-  }
-  try {
-    await action();
-  } finally {
-    roomMutationInProgress = false;
-    if (button?.isConnected) {
-      button.disabled = false;
-      button.classList.remove('is-loading');
-      button.removeAttribute('aria-busy');
-      button.innerHTML = originalMarkup;
-    }
-  }
-}
-async function editRoomName(button, room) {
-  if (roomMutationInProgress || !room) return;
-  const name = prompt('Room name', room.name);
-  if (!name?.trim()) return;
-  await withRoomButtonBusy(button, 'Saving room…', async () => {
-    unwrap(await supabase.from('rooms').update({ room_name: name.trim() }).eq('id', room.id).select('id').single());
-    await loadDatabase();
-    state.adminOpen = true;
-    render();
-  });
-}
 function bind() {
   document.querySelectorAll('[data-tab]').forEach(button => button.onclick = () => {
     state.tab = button.dataset.tab; state.selected = null; render();
@@ -230,11 +196,8 @@ function bind() {
     if (!name?.trim()) return;
     try { unwrap(await supabase.from('rooms').update({ room_name: name.trim() }).eq('id', room.id).select('id').single()); await loadDatabase(); state.adminOpen = true; render(); }
     catch (error) { alert(error.message); }
-    const room = allRooms.find(item => item.id === button.dataset.editRoom);
-    try { await editRoomName(button, room); } catch (error) { alert(error.message); }
   });
   $('#editSelectedRoom')?.addEventListener('click', async () => {
-  $('#editSelectedRoom')?.addEventListener('click', async event => {
     const room = allRooms.find(item => item.id === state.adminRoomId);
     if (!room) return;
     const name = prompt('Room name', room.name);
@@ -243,18 +206,13 @@ function bind() {
       unwrap(await supabase.from('rooms').update({ room_name: name.trim() }).eq('id', room.id).select('id').single());
       await loadDatabase(); state.adminOpen = true; render();
     } catch (error) { alert(error.message); }
-    try { await editRoomName(event.currentTarget, room); } catch (error) { alert(error.message); }
   });
   $('#addRoom')?.addEventListener('click', async () => {
-  $('#addRoom')?.addEventListener('click', async event => {
-    if (roomMutationInProgress) return;
-    const button = event.currentTarget;
     const name = prompt('Room or facility name'); if (!name?.trim()) return;
     const floor = Number(prompt('Floor (1–4)', '1')), template = (rows[floor] || []).find(item => item.type === 'Classroom');
     if (!template) { alert('No classroom map position is available for that floor.'); return; }
     const slug = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
     try {
-    try { await withRoomButtonBusy(button, 'Adding room…', async () => {
       const inserted = unwrap(await supabase.from('rooms').insert({
         id: 'F' + floor + '-' + slug + '-' + crypto.randomUUID().slice(0, 8), room_name: name.trim(), floor_id: floor,
         building: 'Colegio de Montalban', room_type: 'Classroom', description: 'Classroom on the ' + floorName(floor).toLowerCase() + ' floor.',
@@ -263,7 +221,6 @@ function bind() {
       state.adminRoomId = inserted.id; state.adminFloor = floor;
       await loadDatabase(); state.adminOpen = true; render();
     } catch (error) { alert(error.message); }
-    }); } catch (error) { alert(error.message); }
   });
   document.querySelectorAll('[data-admin-section]').forEach(button => button.onclick = () => {
     state.adminSection = button.dataset.adminSection; state.editScheduleId = null; state.scheduleMessage = ''; render();
