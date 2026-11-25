@@ -85,7 +85,7 @@ function adminPanel() {
       <form id="login"><label>Email<input name="email" type="email" autocomplete="username" required></label>
       <label>Password<input name="password" type="password" autocomplete="current-password" required></label>
       <button class="primary" type="submit">Sign in →</button></form>` : `
-      <div class="admin-toolbar"><div class="admin-summary"><b>${allRooms.length}</b> rooms <b>${schedule.length}</b> schedules</div><div class="admin-toolbar-actions"><button id="addRoom" class="outline">＋ Add room</button><button id="logout" class="outline">Sign out</button></div></div>
+      <div class="admin-toolbar"><div class="admin-summary"><b>${allRooms.length}</b> rooms <b>${schedule.length}</b> schedules</div><div class="admin-toolbar-actions"><button id="logout" class="outline">Sign out</button></div></div>
       <div class="admin-map-layout">
         <section class="admin-map-panel">
           <div class="admin-panel-heading"><h3>Select a room</h3><small>Choose a floor, then click a room on the map.</small></div>
@@ -204,21 +204,6 @@ function bind() {
     if (!name?.trim()) return;
     try {
       unwrap(await supabase.from('rooms').update({ room_name: name.trim() }).eq('id', room.id).select('id').single());
-      await loadDatabase(); state.adminOpen = true; render();
-    } catch (error) { alert(error.message); }
-  });
-  $('#addRoom')?.addEventListener('click', async () => {
-    const name = prompt('Room or facility name'); if (!name?.trim()) return;
-    const floor = Number(prompt('Floor (1–4)', '1')), template = (rows[floor] || []).find(item => item.type === 'Classroom');
-    if (!template) { alert('No classroom map position is available for that floor.'); return; }
-    const slug = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
-    try {
-      const inserted = unwrap(await supabase.from('rooms').insert({
-        id: 'F' + floor + '-' + slug + '-' + crypto.randomUUID().slice(0, 8), room_name: name.trim(), floor_id: floor,
-        building: 'Colegio de Montalban', room_type: 'Classroom', description: 'Classroom on the ' + floorName(floor).toLowerCase() + ' floor.',
-        polygon: { x: template.x, y: template.y, w: template.w, h: template.h }, published: true,
-      }).select('id').single());
-      state.adminRoomId = inserted.id; state.adminFloor = floor;
       await loadDatabase(); state.adminOpen = true; render();
     } catch (error) { alert(error.message); }
   });
