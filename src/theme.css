@@ -172,6 +172,22 @@ footer .footbrand { color: #285239; }
 }
 .theme-toggle:hover { background: #edf5e9; }
 .theme-toggle span:first-child { color: #a1841e; font-size: 15px; line-height: 1; }
+.is-loading { cursor: wait !important; opacity: .82; }
+.button-spinner {
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  margin-right: 8px;
+  vertical-align: -2px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: button-spin .7s linear infinite;
+}
+@keyframes button-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .button-spinner { animation-duration: 1.5s; }
+}
 
 html[data-theme="dark"] {
   color-scheme: dark;
